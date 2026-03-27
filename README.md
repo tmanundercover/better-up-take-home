@@ -225,10 +225,11 @@ The generated artifacts were reviewed and adjusted to ensure they matched the in
 
 AI was used for ideation, structuring, and acceleration, but not as a source of truth. I validated all outputs, ensured consistency across the system design, and made final decisions based on practical engineering considerations.
 
-I treated AI as a collaborator to accelerate design exploration, while maintaining full ownership of correctness, security, and architectural integrity.
+I treated AI as a collaborator to accelerate design exploration, while maintaining full ownership of correctness, security, and architectural integrity & consistency.
 
 ### What I Would Build Next
-A policy engine to validate AI decisions against formal access rules
-A metrics dashboard for onboarding latency and failure rates
-Template-based onboarding profiles by role and department
-Deeper integration with identity providers (Okta SCIM, SAML flows)
+- An actual auth policy engine to validate AI decisions against formal access rules
+- Add metrics to the dashboard for onboarding latency and failure rates
+- Template-based onboarding profiles by role and department
+- Deeper integration with identity providers for auth (Okta SCIM, SAML flows)
+- Separate logger workflow for orchestrator?
