@@ -64,8 +64,9 @@ All provisioning actions are executed through the MCP server, which enforces RBA
 ## Prototype
 
 ![n8n Diagram](public/n8n-workflow-screenshot.png)
+- [View Workflow JSON](public/n8n-workflow.json)
+- [Video link](public/n8n-walk-thru.mp4)
 <video controls src="public/n8n-walk-thru.mp4" title="Title"></video>
-[View Workflow JSON](public/n8n-workflow.json)
 
 ## Repo Layout
 
@@ -128,9 +129,10 @@ The React dashboard lives in [`src/App.jsx`](/Users/terrelltrapperkeepersingleto
 
 It currently supports two left-sidebar modes:
 
-- `Lookup`: fetch audit log entries by employee ID from the MCP backend ![Lookup Screenshot](public/heliosHR-dashboard-lookup.png)
+- `Lookup`: fetch audit log entries by employee ID from the MCP backend ![Lookup Screenshot](public/heliosHR-dashboard-lookup.png) [Audit Logs Video](public/lookup-audit-logs.mp4)
 <video controls src="public/lookup-audit-logs.mp4" title="Title"></video>
 - `New`: send a new-hire payload to the n8n test webhook and show the response ![New Hire Screenshot](public/heliosHR-dashboard-new-hire.png)
+[Create New Hire Video](public/lookup-audit-logs.mp4)
 <video controls src="public/create-new-hire.mp4" title="Title"></video>
 
 
