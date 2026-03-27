@@ -1,0 +1,656 @@
+openapi: 3.1.0
+info:
+  title: HeliosHR Onboarding MCP Server
+  version: 1.0.0
+  summary: Secure tool execution layer for AI-assisted employee onboarding
+  description: |
+    This MCP server exposes a constrained set of onboarding tools to the orchestration layer.
+    It enforces authentication, RBAC, schema validation, idempotency, and tool-level audit logging.
+    AI systems do not call SaaS APIs directly; all provisioning actions must pass through this server.
+
+servers:
+  - url: http://127.0.0.1:5001/demo-project/us-central1/mcpApi
+    description: Local Firebase Functions emulator
+  - url: https://mcp.helioshr.internal
+    description: Internal MCP server
+
+tags:
+  - name: Tools
+    description: Provisioning tools exposed through MCP
+  - name: Audit
+    description: Tool-level audit and health endpoints
+
+security:
+  - bearerAuth: []
+
+paths:
+  /tools/create_okta_user:
+    post:
+      tags: [Tools]
+      summary: Create or reconcile an Okta user
+      operationId: createOktaUser
+      x-required-roles:
+        - it_automation_service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOktaUserRequest'
+      responses:
+        '200':
+          description: Okta user created or reused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOktaUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /tools/provision_google_workspace:
+    post:
+      tags: [Tools]
+      summary: Create or reconcile Google Workspace access
+      operationId: provisionGoogleWorkspace
+      x-required-roles:
+        - it_automation_service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionGoogleWorkspaceRequest'
+      responses:
+        '200':
+          description: Workspace access provisioned or reused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionGoogleWorkspaceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /tools/invite_slack_user:
+    post:
+      tags: [Tools]
+      summary: Invite a user to Slack and assign channels
+      operationId: inviteSlackUser
+      x-required-roles:
+        - it_automation_service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteSlackUserRequest'
+      responses:
+        '200':
+          description: Slack user invited or reconciled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSlackUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /tools/assign_jira_permissions:
+    post:
+      tags: [Tools]
+      summary: Assign Jira groups and project permissions
+      operationId: assignJiraPermissions
+      x-required-roles:
+        - it_automation_service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignJiraPermissionsRequest'
+      responses:
+        '200':
+          description: Jira permissions assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignJiraPermissionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Jira user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /tools/create_freshservice_ticket:
+    post:
+      tags: [Tools]
+      summary: Create or update onboarding tracking ticket
+      operationId: createFreshserviceTicket
+      x-required-roles:
+        - it_automation_service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFreshserviceTicketRequest'
+      responses:
+        '200':
+          description: Ticket created or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFreshserviceTicketResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /audit/tool-invocations:
+    get:
+      tags: [Audit]
+      summary: Retrieve recent tool invocation logs
+      operationId: getToolInvocationAuditLogs
+      parameters:
+        - in: query
+          name: executionId
+          schema:
+            type: string
+        - in: query
+          name: employeeId
+          schema:
+            type: string
+        - in: query
+          name: toolName
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit logs returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogEntry'
+
+  /audit/logs:
+    post:
+      tags: [Audit]
+      summary: Ingest a workflow-level audit log entry
+      operationId: createAuditLogEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuditLogRequest'
+      responses:
+        '201':
+          description: Audit log stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  item:
+                    $ref: '#/components/schemas/AuditLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /health:
+    get:
+      tags: [Audit]
+      summary: MCP server health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BaseRequestMetadata:
+      type: object
+      properties:
+        executionId:
+          type: string
+          description: Workflow execution identifier
+        employeeId:
+          type: string
+          description: Employee identifier from Workday
+        idempotencyKey:
+          type: string
+          description: Optional explicit idempotency key
+      required:
+        - executionId
+        - employeeId
+
+    CreateOktaUserRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequestMetadata'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            firstName:
+              type: string
+            lastName:
+              type: string
+            department:
+              type: string
+            role:
+              type: string
+            managerEmail:
+              type: string
+              format: email
+            oktaGroups:
+              type: array
+              items:
+                type: string
+          required:
+            - email
+            - firstName
+            - lastName
+            - department
+            - role
+            - oktaGroups
+
+    CreateOktaUserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        action:
+          type: string
+          enum: [created_user, reused_existing_user]
+        oktaUserId:
+          type: string
+        idempotency:
+          $ref: '#/components/schemas/IdempotencyResult'
+        audit:
+          $ref: '#/components/schemas/AuditMetadata'
+      required:
+        - status
+        - action
+        - oktaUserId
+
+    ProvisionGoogleWorkspaceRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequestMetadata'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            firstName:
+              type: string
+            lastName:
+              type: string
+            googleGroups:
+              type: array
+              items:
+                type: string
+            driveTemplates:
+              type: array
+              items:
+                type: string
+          required:
+            - email
+            - firstName
+            - lastName
+            - googleGroups
+
+    ProvisionGoogleWorkspaceResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        action:
+          type: string
+          enum: [created_workspace_user, reused_existing_workspace_user]
+        emailCreated:
+          type: boolean
+        groupsApplied:
+          type: array
+          items:
+            type: string
+        idempotency:
+          $ref: '#/components/schemas/IdempotencyResult'
+        audit:
+          $ref: '#/components/schemas/AuditMetadata'
+      required:
+        - status
+        - action
+        - emailCreated
+
+    InviteSlackUserRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequestMetadata'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            channels:
+              type: array
+              items:
+                type: string
+            displayName:
+              type: string
+          required:
+            - email
+            - channels
+
+    InviteSlackUserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        action:
+          type: string
+          enum: [invited_user, reused_existing_user]
+        slackUserId:
+          type: string
+        channelsAssigned:
+          type: array
+          items:
+            type: string
+        idempotency:
+          $ref: '#/components/schemas/IdempotencyResult'
+        audit:
+          $ref: '#/components/schemas/AuditMetadata'
+      required:
+        - status
+        - action
+        - slackUserId
+
+    AssignJiraPermissionsRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequestMetadata'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            projectRoles:
+              type: array
+              items:
+                type: string
+            jiraGroups:
+              type: array
+              items:
+                type: string
+          required:
+            - email
+            - projectRoles
+
+    AssignJiraPermissionsResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        action:
+          type: string
+          enum: [assigned_roles]
+        jiraAccountId:
+          type: string
+        assignedRoles:
+          type: array
+          items:
+            type: string
+        idempotency:
+          $ref: '#/components/schemas/IdempotencyResult'
+        audit:
+          $ref: '#/components/schemas/AuditMetadata'
+      required:
+        - status
+        - action
+        - jiraAccountId
+
+    CreateFreshserviceTicketRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequestMetadata'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            subject:
+              type: string
+            description:
+              type: string
+            status:
+              type: string
+          required:
+            - email
+            - subject
+            - description
+            - status
+
+    CreateFreshserviceTicketResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        action:
+          type: string
+          enum: [created_ticket, updated_ticket]
+        ticketId:
+          type: string
+        audit:
+          $ref: '#/components/schemas/AuditMetadata'
+      required:
+        - status
+        - action
+        - ticketId
+
+    IdempotencyResult:
+      type: object
+      properties:
+        key:
+          type: string
+        reused:
+          type: boolean
+      required:
+        - key
+        - reused
+
+    AuditMetadata:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        actor:
+          type: string
+          example: n8n-onboarding-workflow
+        authorized:
+          type: boolean
+        validated:
+          type: boolean
+      required:
+        - timestamp
+        - actor
+        - authorized
+        - validated
+
+    AuditLogEntry:
+      type: object
+      properties:
+        executionId:
+          type: string
+        employeeId:
+          type: string
+        layer:
+          type: string
+          enum: [mcp-server, workflow]
+        toolName:
+          type: string
+        status:
+          type: string
+          enum: [success, failure]
+        timestamp:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    CreateAuditLogRequest:
+      type: object
+      properties:
+        executionId:
+          type: string
+        employeeId:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [success, failure]
+        checks:
+          type: object
+          additionalProperties:
+            type: boolean
+        systems:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        actor:
+          type: string
+      required:
+        - executionId
+        - employeeId
+        - email
+        - status
+        - systems
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [failure]
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            statusCode:
+              type: integer
+            retryable:
+              type: boolean
+          required:
+            - code
+            - message
+            - statusCode
+            - retryable
+      required:
+        - status
+        - error
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Caller is authenticated but not authorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict or policy violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

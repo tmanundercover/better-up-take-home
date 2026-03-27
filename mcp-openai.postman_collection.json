@@ -1,0 +1,376 @@
+{
+  "info": {
+    "_postman_id": "6d1d03db-a6a0-4df0-bf9f-48204f7d2fd7",
+    "name": "HeliosHR Onboarding MCP Server",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "protocol",
+      "value": "http"
+    },
+    {
+      "key": "host",
+      "value": "127.0.0.1"
+    },
+    {
+      "key": "port",
+      "value": "5001"
+    },
+    {
+      "key": "projectId",
+      "value": "demo-project"
+    },
+    {
+      "key": "region",
+      "value": "us-central1"
+    },
+    {
+      "key": "functionName",
+      "value": "mcpApi"
+    },
+    {
+      "key": "bearerToken",
+      "value": "test-token"
+    },
+    {
+      "key": "caller",
+      "value": "postman"
+    },
+    {
+      "key": "callerRoles",
+      "value": "it_automation_service"
+    },
+    {
+      "key": "executionId",
+      "value": "exec-postman-001"
+    },
+    {
+      "key": "employeeId",
+      "value": "emp-001"
+    },
+    {
+      "key": "employeeEmail",
+      "value": "new.hire@example.com"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/health",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/audit/tool-invocations?executionId={{executionId}}",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "audit",
+            "tool-invocations"
+          ],
+          "query": [
+            {
+              "key": "executionId",
+              "value": "{{executionId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Okta User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"email\": \"{{employeeEmail}}\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Hire\",\n  \"department\": \"Engineering\",\n  \"role\": \"Software Engineer\",\n  \"managerEmail\": \"manager@example.com\",\n  \"oktaGroups\": [\"eng\", \"all-hands\"]\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/tools/create_okta_user",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "tools",
+            "create_okta_user"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Provision Google Workspace",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"email\": \"{{employeeEmail}}\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Hire\",\n  \"googleGroups\": [\"eng@helioshr.example\"],\n  \"driveTemplates\": [\"engineering-onboarding\"]\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/tools/provision_google_workspace",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "tools",
+            "provision_google_workspace"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Invite Slack User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"email\": \"{{employeeEmail}}\",\n  \"displayName\": \"New Hire\",\n  \"channels\": [\"eng\", \"team-updates\"]\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/tools/invite_slack_user",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "tools",
+            "invite_slack_user"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Assign Jira Permissions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"email\": \"{{employeeEmail}}\",\n  \"projectRoles\": [\"developer\"],\n  \"jiraGroups\": [\"jira-software-users\"]\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/tools/assign_jira_permissions",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "tools",
+            "assign_jira_permissions"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Freshservice Ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"email\": \"{{employeeEmail}}\",\n  \"subject\": \"Onboarding tracking\",\n  \"description\": \"Manual review needed for onboarding workflow\",\n  \"status\": \"open\"\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/tools/create_freshservice_ticket",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "tools",
+            "create_freshservice_ticket"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Provision Onboarding Workflow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "{{caller}}"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "{{callerRoles}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"{{executionId}}\",\n  \"newHire\": {\n    \"employeeId\": \"{{employeeId}}\",\n    \"email\": \"{{employeeEmail}}\",\n    \"firstName\": \"New\",\n    \"lastName\": \"Hire\",\n    \"displayName\": \"New Hire\",\n    \"department\": \"Engineering\",\n    \"role\": \"Software Engineer\",\n    \"managerEmail\": \"manager@example.com\"\n  },\n  \"accessDecision\": {\n    \"oktaGroups\": [\"eng\", \"all-hands\"],\n    \"googleGroups\": [\"eng@helioshr.example\"],\n    \"driveTemplates\": [\"engineering-onboarding\"],\n    \"slackChannels\": [\"eng\", \"team-updates\"],\n    \"jiraRoles\": [\"developer\"],\n    \"jiraGroups\": [\"jira-software-users\"]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{protocol}}://{{host}}:{{port}}/{{projectId}}/{{region}}/{{functionName}}/workflows/provision_onboarding",
+          "protocol": "{{protocol}}",
+          "host": [
+            "{{host}}"
+          ],
+          "port": "{{port}}",
+          "path": [
+            "{{projectId}}",
+            "{{region}}",
+            "{{functionName}}",
+            "workflows",
+            "provision_onboarding"
+          ]
+        }
+      }
+    }
+  ]
+}

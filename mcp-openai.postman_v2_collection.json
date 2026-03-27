@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "HeliosHR Onboarding MCP Server Local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          }
+        ],
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/health"
+      }
+    },
+    {
+      "name": "Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          }
+        ],
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/audit/tool-invocations?executionId=exec-postman-001"
+      }
+    },
+    {
+      "name": "Create Okta User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"employeeId\": \"emp-001\",\n  \"email\": \"new.hire@example.com\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Hire\",\n  \"department\": \"Engineering\",\n  \"role\": \"Software Engineer\",\n  \"managerEmail\": \"manager@example.com\",\n  \"oktaGroups\": [\"eng\", \"all-hands\"]\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/tools/create_okta_user"
+      }
+    },
+    {
+      "name": "Provision Google Workspace",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"employeeId\": \"emp-001\",\n  \"email\": \"new.hire@example.com\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Hire\",\n  \"googleGroups\": [\"eng@helioshr.example\"],\n  \"driveTemplates\": [\"engineering-onboarding\"]\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/tools/provision_google_workspace"
+      }
+    },
+    {
+      "name": "Invite Slack User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"employeeId\": \"emp-001\",\n  \"email\": \"new.hire@example.com\",\n  \"displayName\": \"New Hire\",\n  \"channels\": [\"eng\", \"team-updates\"]\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/tools/invite_slack_user"
+      }
+    },
+    {
+      "name": "Assign Jira Permissions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"employeeId\": \"emp-001\",\n  \"email\": \"new.hire@example.com\",\n  \"projectRoles\": [\"developer\"],\n  \"jiraGroups\": [\"jira-software-users\"]\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/tools/assign_jira_permissions"
+      }
+    },
+    {
+      "name": "Create Freshservice Ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"employeeId\": \"emp-001\",\n  \"email\": \"new.hire@example.com\",\n  \"subject\": \"Onboarding tracking\",\n  \"description\": \"Manual review needed for onboarding workflow\",\n  \"status\": \"open\"\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/tools/create_freshservice_ticket"
+      }
+    },
+    {
+      "name": "Provision Onboarding Workflow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer test-token"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-caller",
+            "value": "postman"
+          },
+          {
+            "key": "x-caller-roles",
+            "value": "it_automation_service"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"executionId\": \"exec-postman-001\",\n  \"newHire\": {\n    \"employeeId\": \"emp-001\",\n    \"email\": \"new.hire@example.com\",\n    \"firstName\": \"New\",\n    \"lastName\": \"Hire\",\n    \"displayName\": \"New Hire\",\n    \"department\": \"Engineering\",\n    \"role\": \"Software Engineer\",\n    \"managerEmail\": \"manager@example.com\"\n  },\n  \"accessDecision\": {\n    \"oktaGroups\": [\"eng\", \"all-hands\"],\n    \"googleGroups\": [\"eng@helioshr.example\"],\n    \"driveTemplates\": [\"engineering-onboarding\"],\n    \"slackChannels\": [\"eng\", \"team-updates\"],\n    \"jiraRoles\": [\"developer\"],\n    \"jiraGroups\": [\"jira-software-users\"]\n  }\n}"
+        },
+        "url": "http://127.0.0.1:5001/demo-project/us-central1/mcpApi/workflows/provision_onboarding"
+      }
+    }
+  ]
+}

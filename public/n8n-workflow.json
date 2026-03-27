@@ -1,0 +1,876 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.body.toJsonString() || {\n  \"employeeId\": \"EMP-10234\",\n  \"firstName\": \"Jordan\",\n  \"lastName\": \"Lee\",\n  \"email\": \"jordan.lee@helioshr.com\",\n  \"department\": \"Engineering\",\n  \"role\": \"Frontend Engineer\",\n  \"managerEmail\": \"manager@helioshr.com\",\n  \"location\": \"US\"\n} \n}} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -992,
+        80
+      ],
+      "id": "69e68f07-cc96-40f4-8c37-0c50772c77f7",
+      "name": "Normalize Employee Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.text || $json.content || $json.message.content || $json.response || '{}';\nlet parsed;\ntry {\n  parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (e) {\n  return [{ json: { valid: false, reason: 'Invalid JSON from LLM', raw } }];\n}\n\nconst required = ['oktaGroups', 'googleGroups', 'slackChannels', 'jiraRoles'];\nconst missing = required.filter((k) => !(k in parsed));\nif (missing.length) {\n  return [{ json: { valid: false, reason: `Missing fields: ${missing.join(', ')}`, parsed } }];\n}\n\nreturn [{ json: { valid: true, accessDecision: parsed } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        32
+      ],
+      "id": "cf840c28-c9af-43f5-ae18-78e8959eea30",
+      "name": "Validate AI Output"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        32
+      ],
+      "id": "3fae8efe-2501-4552-94fe-cfe1765949f8",
+      "name": "Valid Access Decision?"
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "email": "terrell.singleton@gmail.com",
+        "subject": "=Manual review required for {{$node[\"Normalize Employee Data\"].json.email}}",
+        "description": "=AI output validation failed: {{$json.reason || 'Unknown validation error'}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.freshservice",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        528
+      ],
+      "id": "ccfcb723-1127-4cf0-8a45-2f7fe5bfe0b2",
+      "name": "Manual Review Ticket",
+      "credentials": {
+        "freshserviceApi": {
+          "id": "FOzqv3QQrlipcqGA",
+          "name": "Freshservice account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "text": "=Manual review required for {{$node[\"Normalize Employee Data\"].json.firstName}} {{$node[\"Normalize Employee Data\"].json.lastName}} onboarding.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        528
+      ],
+      "id": "3b063aaa-c5d0-4856-bb6d-077984c796c7",
+      "name": "Notify Manual Review",
+      "webhookId": "manual-review-webhook-id",
+      "credentials": {
+        "slackApi": {
+          "id": "rgsi6eOdD559tDoI",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const employee = $node['Normalize Employee Data'].json;\nconst accessDecision = $node['Validate AI Output'].json.accessDecision;\nreturn [{\n  json: {\n    ...employee,\n    accessDecision,\n    executionId: `onboard-${employee.employeeId}-${Date.now()}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -48
+      ],
+      "id": "1dc5525b-96d3-4ede-9bfe-32f4356b6f9a",
+      "name": "Assemble Provisioning Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/tools/create_okta_user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer test-token"
+            },
+            {
+              "name": "x-caller-roles",
+              "value": "it_automation_service"
+            },
+            {
+              "name": "x-caller",
+              "value": "n8n"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-execution-id",
+              "value": "exec-123"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"employeeId\": \"{{ $json.employeeId }}\",\n  \"email\": \"{{$json.email}}\",\n  \"firstName\": \"{{$json.firstName}}\",\n  \"lastName\": \"{{$json.lastName}}\",\n  \"department\": \"{{$json.department}}\",\n  \"role\": \"{{$json.role}}\",\n  \"managerEmail\": \"{{$json.managerEmail}}\",\n  \"executionId\": \"{{$json.executionId}}\",\n  \"oktaGroups\": [{{ $json.accessDecision.oktaGroups.map(x=>\"\\\"\"+x+\"\\\"\") }}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "767a7d42-986f-4abf-84c5-1d9eecf9e624",
+      "name": "MCP - Create User in Okta"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/tools/provision_google_workspace",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer test-token"
+            },
+            {
+              "name": "x-caller",
+              "value": "n8n"
+            },
+            {
+              "name": "x-caller-roles",
+              "value": "it_automation_service"
+            },
+            {
+              "name": "x-execution-id",
+              "value": "exec-123"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"employeeId\": \"{{ $('Assemble Provisioning Payload').item.json.employeeId }}\",\n  \"email\": \"{{$('Assemble Provisioning Payload').item.json.email}}\",\n  \"firstName\": \"{{$('Assemble Provisioning Payload').item.json.firstName}}\",\n  \"lastName\": \"{{$('Assemble Provisioning Payload').item.json.lastName}}\",\n  \"executionId\": \"{{$('Assemble Provisioning Payload').item.json.executionId}}\",\n  \"googleGroups\": [{{$('Assemble Provisioning Payload').item.json.accessDecision.googleGroups.map(x=>\"\\\"\"+x+\"\\\"\")}}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        -144
+      ],
+      "id": "fe28792a-ffd0-41aa-addb-ba1518184ee9",
+      "name": "MCP - Create Email + Drive Access"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/tools/invite_slack_user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer test-token"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-caller",
+              "value": "n8n"
+            },
+            {
+              "name": "x-caller-roles",
+              "value": "it_automation_service"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"employeeId\": \"{{ $('Assemble Provisioning Payload').item.json.employeeId }}\",\n  \"email\": \"{{ $('Assemble Provisioning Payload').item.json.email }}\",\n  \"executionId\": \"{{ $('Assemble Provisioning Payload').item.json.executionId }}\",\n  \"channels\": [{{$('Assemble Provisioning Payload').item.json.accessDecision.slackChannels.map(x=>\"\\\"\"+x+\"\\\"\")}}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -144
+      ],
+      "id": "f7ac67f5-0c60-4ce4-aa91-3610ea0a2b3e",
+      "name": "MCP - Invite to Slack + Assign Channels"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/tools/assign_jira_permissions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer test-token"
+            },
+            {
+              "name": "x-caller",
+              "value": "n8n"
+            },
+            {
+              "name": "x-caller-roles",
+              "value": "it_automation_service"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"employeeId\": \"{{ $('Assemble Provisioning Payload').item.json.employeeId }}\",\n  \"email\": \"{{ $('Assemble Provisioning Payload').item.json.email }}\",\n  \"executionId\": \"{{ $('Assemble Provisioning Payload').item.json.executionId }}\",\n  \"projectRoles\": [{{ $('Assemble Provisioning Payload').item.json.accessDecision.jiraRoles.map(x=>\"\\\"\"+x+\"\\\"\") }}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        -144
+      ],
+      "id": "77a1888a-2ddd-4377-acff-31680717327b",
+      "name": "MCP - Assign Projects + Permissions"
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "email": "terrell.singleton@gmail.com",
+        "subject": "=Onboarding tracking for {{$node[\"Normalize Employee Data\"].json.email}}",
+        "description": "=Execution {{$node[\"Assemble Provisioning Payload\"].json.executionId}} started for {{$node[\"Normalize Employee Data\"].json.firstName}} {{$node[\"Normalize Employee Data\"].json.lastName}}.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.freshservice",
+      "typeVersion": 1,
+      "position": [
+        240,
+        240
+      ],
+      "id": "7d6541b3-5843-4905-b519-2fcfbb6d1227",
+      "name": "Create IT Ticket (Onboarding Tracking)",
+      "credentials": {
+        "freshserviceApi": {
+          "id": "FOzqv3QQrlipcqGA",
+          "name": "Freshservice account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    executionId: $node['Assemble Provisioning Payload'].json.executionId,\n    employeeId: $node['Normalize Employee Data'].json.employeeId,\n    email: $node['Normalize Employee Data'].json.email,\n    status: 'success',\n    checks: $input.first().json.checks,\n    systems: ['okta', 'google-workspace', 'slack', 'jira'],\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -112
+      ],
+      "id": "e03f6f7d-664c-403b-ad3c-75163f86083a",
+      "name": "Build Audit Entry"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/audit/logs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        -128
+      ],
+      "id": "ec19a16e-a61b-4ade-b770-436631236995",
+      "name": "Write Workflow Audit Log"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "text": "=Onboarding complete for {{$node[\"Normalize Employee Data\"].json.firstName}} {{$node[\"Normalize Employee Data\"].json.lastName}} ({{$node[\"Normalize Employee Data\"].json.email}}).",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2128,
+        -112
+      ],
+      "id": "c7622121-e4b5-4b74-b660-789693bd4a6f",
+      "name": "Notify Manager in Slack",
+      "webhookId": "notify-manager-webhook-id",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "slackApi": {
+          "id": "rgsi6eOdD559tDoI",
+          "name": "Slack account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Find any error payload if one exists\nconst errorItem = items.find(item => item.json?.error || item.json?.status === \"failure\");\n\n// Search all input items for successful MCP actions\nconst userInvited = items.some(item => item.json?.action === \"invited_user\");\nconst assignedRoles = items.some(item => item.json?.action === \"assigned_roles\");\nconst createdWorkspace = items.some(item => item.json?.action === \"created_workspace_user\");\nconst createdUser = items.some(item => item.json?.action === \"created_user\");\n\n// Optional: count reused resources as success too\nconst reusedUser = items.some(item => item.json?.action === \"reused_existing_user\");\nconst reusedWorkspace = items.some(item => item.json?.action === \"reused_existing_workspace_user\");\n\nconst userProvisioned = createdUser || reusedUser;\nconst workspaceProvisioned = createdWorkspace || reusedWorkspace;\n\nconst success = userInvited && assignedRoles && workspaceProvisioned && userProvisioned;\n\nreturn [\n  {\n    json: {\n      status: success ? \"success\" : \"failure\",\n      executionId: $node[\"Assemble Provisioning Payload\"]?.json?.executionId || `${success ? \"onboard\" : \"failed\"}-${Date.now()}`,\n      employeeId: $node[\"Normalize Employee Data\"].json.employeeId,\n      email: $node[\"Normalize Employee Data\"].json.email,\n      failedNode: success ? null : (errorItem?.json?.node || \"unknown\"),\n      error: success ? null : (errorItem?.json || null),\n      timestamp: new Date().toISOString(),\n      checks: {\n        userInvited,\n        assignedRoles,\n        workspaceProvisioned,\n        userProvisioned\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        432
+      ],
+      "id": "be3a0950-a610-408d-83b8-49838feddce0",
+      "name": "Retry / Error Handler"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:5001/betterup-hr-mcp/us-central1/mcpApi/audit/logs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2064,
+        464
+      ],
+      "id": "520dce01-dc34-495d-8e11-cf18441d237e",
+      "name": "Write Failure Audit Log"
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "email": "terrell.singleton@gmail.com",
+        "subject": "=Onboarding failure for {{$node[\"Normalize Employee Data\"].json.email}}",
+        "description": "=Workflow failed at {{$json.failedNode}}. Execution ID: {{$json.executionId}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.freshservice",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        448
+      ],
+      "id": "afd945e6-f4a5-4375-8298-296215a45352",
+      "name": "Create Failure IT Ticket",
+      "alwaysOutputData": true,
+      "credentials": {
+        "freshserviceApi": {
+          "id": "FOzqv3QQrlipcqGA",
+          "name": "Freshservice account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## MCP Server - secure tool execution layer between AI and SaaS systems.\n\nResponsibilities:\n• Enforces authentication and RBAC for all tool calls  \n• Validates input schemas before execution  \n• Restricts access via tool whitelisting  \n• Executes idempotent provisioning actions  \n• Emits tool-level audit logs for every request  \n\nAll provisioning actions must pass through MCP — AI cannot directly call external systems.",
+        "height": 480,
+        "width": 1024,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        -400
+      ],
+      "typeVersion": 1,
+      "id": "deef369f-1e7e-4e47-91f5-af2026ed9ec8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "### AI Usage Statement\n\nAI tools were used as an assistive aid during the design and documentation of this solution, primarily to accelerate iteration and improve clarity. All final architectural decisions, system boundaries, and implementation choices were made and validated by me.\n\nSpecifically:\n\n* I used ChatGPT to help generate an initial prompt for the architecture diagram. The generated output was refined manually, particularly with respect to system boundaries, MCP placement, and visual clarity to better reflect the intended design. The final architecture diagram was cleaned up and finalized with Canva.\n* I used AI to help draft a representative n8n workflow and supporting prompts for the AI decision step (LLM). These were iterated on and adjusted to ensure the workflow accurately reflects a realistic onboarding pipeline and enforces proper separation between orchestration, AI reasoning, and tool execution.\n* I used AI to help shape the MCP server concept and tool definitions, including structuring tool interfaces and input/output schemas. These were reviewed and modified to align with secure design principles such as RBAC enforcement, tool whitelisting, and deterministic execution boundaries.\n* I also used ChatGPT to generate an OpenAPI specification for the MCP server. This specification was then used as a foundation to generate portions of the MCP server implementation and a corresponding UI/dashboard interface. \n\nThe generated artifacts were reviewed and adjusted to ensure they matched the intended architecture, security constraints, and data flow.\n\nAI was used for ideation, structuring, and acceleration, but not as a source of truth. I validated all outputs, ensured consistency across the system design, and made final decisions based on practical engineering considerations.\n\nI treated AI as a collaborator to accelerate design exploration, while maintaining full ownership of correctness, security, and architectural integrity.",
+        "height": 752,
+        "width": 560,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1152,
+        -976
+      ],
+      "typeVersion": 1,
+      "id": "640805cb-ee6f-4710-8975-b08894b5ba76",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## LLM Reasoning & Validation\n\nLLM is used to determine access decisions based on structured employee input. \nIts output is validated and cannot directly execute system changes.",
+        "height": 288,
+        "width": 688,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "1814245c-da6f-48ba-9084-342c6d0c4667",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an enterprise onboarding access decision engine.\n\nYour job is to determine the correct system access for a new employee based on their role, department, and location.\n\nYou must return ONLY valid JSON. Do not include any explanation, comments, or extra text.\n\n---\n\n## Employee Input:\n{{ JSON.stringify($json) }}\n\n---\n\n## Your Task:\n\nBased on the employee profile, determine:\n\n- Okta groups\n- Google Workspace groups\n- Slack channels\n- Jira project roles\n\nUse realistic, policy-consistent mappings based on role and department.\n\nIf unsure, make a reasonable assumption — but NEVER leave fields empty.\n\n---\n\n## Output Format (STRICT):\n\nReturn ONLY this JSON structure:\n\n{\n  \"oktaGroups\": [\"string\"],\n  \"googleGroups\": [\"string\"],\n  \"slackChannels\": [\"string\"],\n  \"jiraRoles\": [\"string\"]\n}\n\n---\n\n## Rules:\n\n- Always return all four keys\n- Values must be arrays of strings\n- No nulls, no empty objects\n- Do not include markdown or backticks\n- Do not include any explanation text\n\n---\n\n## Example:\n\nInput(Workday Format):\n{\n  \"role\": \"Frontend Engineer\",\n  \"department\": \"Engineering\",\n  \"location\": \"US\"\n}\n\nFinal Output:\n{\n  \"oktaGroups\": [\"engineering\", \"frontend\", \"us-employees\"],\n  \"googleGroups\": [\"eng-all\", \"frontend-team\"],\n  \"slackChannels\": [\"#engineering\", \"#frontend\", \"#announcements\"],\n  \"jiraRoles\": [\"frontend-dev\", \"jira-software-users\"]\n}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        32
+      ],
+      "id": "ad788549-f8fa-42ce-8717-2ad1b3f074be",
+      "name": "LLM - Role-Based Access Decision",
+      "credentials": {
+        "openAiApi": {
+          "id": "hxX4nCMpwmLOnXLQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n## Retries \n...are applied only to transient failures; non-retryable errors are escalated immediately.",
+        "height": 224,
+        "width": 1280,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1280,
+        416
+      ],
+      "typeVersion": 1,
+      "id": "8a849d19-79bb-4a1b-a9aa-3de94e77d681",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Audit Logging\n",
+        "height": 256,
+        "width": 576,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1488,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "bd2e6036-af96-4264-bbf8-e0ee2f416d78",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fbcc0baa-4037-4c00-a5c1-a4992251ea31",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1232,
+        832
+      ],
+      "id": "c4e77945-d2af-4b33-9a11-7238b16312ed",
+      "name": "Webhook",
+      "webhookId": "fbcc0baa-4037-4c00-a5c1-a4992251ea31"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2800,
+        832
+      ],
+      "id": "5ac56fcb-5277-458d-ae69-58abfee49748",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "## Input/Output ",
+        "height": 240,
+        "width": 4336,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1328,
+        768
+      ],
+      "typeVersion": 1,
+      "id": "bede7d98-a3af-4d80-93cf-d85d409740d8",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "7957b8da-c078-4d27-87a0-3297413abcda",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -112
+      ],
+      "id": "8946270b-39cc-4706-9f9c-08c9bc380aaa",
+      "name": "onboarding complete"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1360,
+        -640
+      ],
+      "id": "4538e774-a384-49c3-b2d9-f3b9842dfe30",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "## Merge\n\nMerging responses from the MCP Server into a single response",
+        "height": 400,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1264,
+        -784
+      ],
+      "typeVersion": 1,
+      "id": "566025e8-1d21-40dd-96d0-5b10382d008c",
+      "name": "Sticky Note6"
+    }
+  ],
+  "connections": {
+    "Normalize Employee Data": {
+      "main": [
+        [
+          {
+            "node": "LLM - Role-Based Access Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI Output": {
+      "main": [
+        [
+          {
+            "node": "Valid Access Decision?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Access Decision?": {
+      "main": [
+        [
+          {
+            "node": "Assemble Provisioning Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Review Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Review Ticket": {
+      "main": [
+        [
+          {
+            "node": "Notify Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Provisioning Payload": {
+      "main": [
+        [
+          {
+            "node": "MCP - Create User in Okta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create IT Ticket (Onboarding Tracking)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP - Create User in Okta": {
+      "main": [
+        [
+          {
+            "node": "MCP - Create Email + Drive Access",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP - Create Email + Drive Access": {
+      "main": [
+        [
+          {
+            "node": "MCP - Invite to Slack + Assign Channels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MCP - Invite to Slack + Assign Channels": {
+      "main": [
+        [
+          {
+            "node": "MCP - Assign Projects + Permissions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "MCP - Assign Projects + Permissions": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Build Audit Entry": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "onboarding complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Workflow Audit Log": {
+      "main": [
+        [
+          {
+            "node": "Notify Manager in Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Manager in Slack": {
+      "main": [
+        []
+      ]
+    },
+    "Retry / Error Handler": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Failure Audit Log": {
+      "main": [
+        [
+          {
+            "node": "Create Failure IT Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Failure IT Ticket": {
+      "main": [
+        []
+      ]
+    },
+    "LLM - Role-Based Access Decision": {
+      "main": [
+        [
+          {
+            "node": "Validate AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Employee Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "onboarding complete": {
+      "main": [
+        [
+          {
+            "node": "Write Workflow Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Failure Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Retry / Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  }
+}
