@@ -64,6 +64,7 @@ All provisioning actions are executed through the MCP server, which enforces RBA
 ## Prototype
 
 ![n8n Diagram](public/n8n-workflow-screenshot.png)
+<video controls src="public/n8n-walk-thru.mp4" title="Title"></video>
 [View Workflow JSON](public/n8n-workflow.json)
 
 ## Repo Layout
@@ -128,7 +129,9 @@ The React dashboard lives in [`src/App.jsx`](/Users/terrelltrapperkeepersingleto
 It currently supports two left-sidebar modes:
 
 - `Lookup`: fetch audit log entries by employee ID from the MCP backend ![Lookup Screenshot](public/heliosHR-dashboard-lookup.png)
+<video controls src="public/lookup-audit-logs.mp4" title="Title"></video>
 - `New`: send a new-hire payload to the n8n test webhook and show the response ![New Hire Screenshot](public/heliosHR-dashboard-new-hire.png)
+<video controls src="public/create-new-hire.mp4" title="Title"></video>
 
 
 
@@ -233,3 +236,6 @@ I treated AI as a collaborator to accelerate design exploration, while maintaini
 - Template-based onboarding profiles by role and department
 - Deeper integration with identity providers for auth (Okta SCIM, SAML flows)
 - Separate logger workflow for orchestrator?
+
+
+I definitely enjoyed putting this together. Thanks for taking the time to review my submission.
